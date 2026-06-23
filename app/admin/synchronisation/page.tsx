@@ -1,3 +1,0 @@
-export const dynamic = "force-dynamic";
-import DashboardShell from "@/components/DashboardShell";import SyncLogs from "@/components/admin/SyncLogs";
-export default function SynchronisationPage(){return <DashboardShell title="Synchronisation" subtitle="Epicollect5 vers Supabase"><div className="panel"><h2>Actions</h2><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><a className="btn btn-primary" href="/api/sync/all" target="_blank">Synchroniser tout</a><a className="btn btn-soft" href="/api/health" target="_blank">Tester Supabase</a><a className="btn btn-soft" href="/api/admin/bootstrap" target="_blank">Créer/valider admin</a></div></div><div style={{height:18}}/><SyncLogs/></DashboardShell>}
