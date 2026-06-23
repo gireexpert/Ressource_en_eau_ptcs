@@ -1,2 +1,0 @@
-import Link from "next/link";
-export default function ModuleCard({href,icon,title,text}:{href:string;icon:string;title:string;text:string}){return <Link className="module-card" href={href}><div className="module-icon">{icon}</div><h3>{title}</h3><p>{text}</p></Link>}
