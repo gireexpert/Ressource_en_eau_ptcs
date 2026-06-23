@@ -1,0 +1,3 @@
+export const dynamic="force-dynamic";export const revalidate=0;export const fetchCache="force-no-store";
+import {NextRequest,NextResponse} from "next/server";import {supabaseAdmin} from "@/lib/supabase-admin";
+export async function GET(req:NextRequest){const token=(req.headers.get("authorization")||"").replace("Bearer ","");if(!token)return NextResponse.json({ok:false,role:"Public"});const {data,error}=await supabaseAdmin.auth.getUser(token);if(error||!data.user)return NextResponse.json({ok:false,role:"Public"});const {data:profil}=await supabaseAdmin.from("profils").select("id,email,nom,prenom,actif,roles(nom_role)").eq("id",data.user.id).single();return NextResponse.json({ok:true,user:data.user,profil,role:(profil as any)?.roles?.nom_role||"Public"});}
