@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
   const { data: role, error: roleError } = await supabaseAdmin
     .from("roles")
     .select("id")
-    .eq("nom_role", "Administrateur PTCS")
+    .eq("nom_role", "Super administrateur")
     .single();
 
   if (roleError || !role?.id) {
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       {
         ok: false,
         error:
-          "Rôle Administrateur PTCS introuvable. Exécuter database/schema.sql puis database/seed.sql dans Supabase.",
+          "Rôle Super administrateur introuvable. Exécuter database/schema.sql puis database/seed.sql dans Supabase.",
         details: roleError?.message,
       },
       { status: 500 }
@@ -125,6 +125,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     email,
-    message: "Administrateur créé/confirmé et rôle attribué.",
+    message: "Super administrateur créé/confirmé et rôle attribué.",
   });
 }

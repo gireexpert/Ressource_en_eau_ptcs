@@ -1,7 +1,9 @@
 insert into roles (nom_role, description) values
+('Super administrateur','Accès total : administration, utilisateurs, sécurité et paramétrage'),
 ('Administrateur PTCS','Gestion complète de la plateforme'),
 ('DNH/DRHK','Consultation, validation et export'),
-('Collecteur','Consultation autorisée'),
+('Collecteur','Consultation autorisée et appui terrain'),
+('Observateur','Consultation simple des données autorisées'),
 ('Public','Accès limité')
 on conflict (nom_role) do update set description=excluded.description;
 

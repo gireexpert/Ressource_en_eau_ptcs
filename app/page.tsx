@@ -26,10 +26,10 @@ export default function Home(){
       </div>
     </section>
 
-    <div className="partner-strip"><div className="partner-box"><img src="/logos/mali-header.jpg" alt="République du Mali"/><img src="/logos/enabel.png" alt="Enabel"/><img src="/logos/dnh.png" alt="DNH"/><img src="/logos/psore.svg" alt="PSORE"/></div></div>
+    <div className="partner-strip"><div className="partner-box"><img src="/logos/mali-header.jpg" alt="République du Mali"/><img src="/logos/enabel.png" alt="Enabel"/><img src="/logos/dnh.png" alt="DNH"/><img src="/logos/psore.png" alt="PSORE"/></div></div>
 
     <section className="section">
-      <div className="section-head"><div><h2>Modules de suivi</h2><p>Accès public aux pages thématiques. Les actions internes restent réservées aux utilisateurs connectés autorisés.</p></div></div>
+      <div className="section-head"><div><h2>Modules de suivi</h2><p>Modules visibles en accès public. L’ouverture des détails est réservée aux utilisateurs connectés autorisés.</p></div></div>
       <div className="grid-4">
         <ModuleCard href="/pluviometrie" icon="🌧️" title="Pluviométrie" text="Relevés quotidiens et cumuls mensuels des précipitations."/>
         <ModuleCard href="/piezometrie" icon="💧" title="Piézométrie" text="Niveaux statiques journaliers et tendances des nappes."/>

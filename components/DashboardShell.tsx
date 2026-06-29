@@ -18,13 +18,14 @@ export default function DashboardShell({ title, subtitle, children }: { title: s
   items.push(...moduleItems);
   if (!loading && authenticated && canAccessObservatoire) items.push(["/observatoire", "📈 Observatoire"]);
   if (!loading && authenticated && canAccessReports) items.push(["/rapports", "📄 Rapports"]);
+  if (!loading && authenticated) items.push(["/mon-compte", "👤 Mon compte"]);
   if (!loading && authenticated && canManage) items.push(["/admin", "⚙️ Administration"]);
 
   return (
     <div className="dashboard-shell">
       <aside className="sidebar">
         <div className="side-logo">
-          <img src="/logos/psore.svg" alt="PSORE" />
+          <img src="/logos/psore.png" alt="PSORE" />
           <div><strong>PSORE</strong><br /><small>PTCS – Enabel – DNH/DRHK</small></div>
         </div>
         <nav className="side-nav">{items.map(([href, label]) => <Link href={href} key={href}>{label}</Link>)}</nav>

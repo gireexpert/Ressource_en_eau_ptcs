@@ -8,12 +8,14 @@ import pointsEauInventaire from "@/public/data/points-eau-inventaire.json";
 import { supabaseAdmin, hasSupabaseAdminEnv } from "@/lib/supabase-admin";
 
 const allowed = new Set(["pluviometrie", "piezometrie", "limnimetrie", "points_eau"]);
+const moduleColors: Record<string, string> = { points_eau: "#0077B6", piezometrie: "#48CAE4", pluviometrie: "#7C3AED", limnimetrie: "#16A34A" };
 const fallback = [
   { module: "pluviometrie", code: "PLV-001", libelle: "Station pluviométrique", latitude: 12.86, longitude: -7.56 },
   { module: "piezometrie", code: "PZ-001", libelle: "Piézomètre", latitude: 12.88, longitude: -7.50 },
   { module: "limnimetrie", code: "LIM-001", libelle: "Station limnimétrique", latitude: 12.80, longitude: -7.62 },
 ];
 function text(v: any) { return String(v ?? "").trim(); }
+function esc(v: any) { return text(v).replace(/[<>&"]/g, (c) => ({"<":"&lt;",">":"&gt;","&":"&amp;","\"":"&quot;"}[c] as string)); }
 function num(v: any) { const raw = String(v ?? "").trim(); if (!raw) return null; const n = Number(raw.replace(",", ".")); return Number.isFinite(n) ? n : null; }
 function lower(v: any) { return text(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function valid(r: any) { return r && r.latitude !== null && r.longitude !== null && Number.isFinite(Number(r.latitude)) && Number.isFinite(Number(r.longitude)); }
@@ -70,30 +72,59 @@ function normalizePe(r: any) {
     alerte_qualite_eau: (ph !== null && (ph < 6.5 || ph > 8.5)) || (temp !== null && temp > 50) || lower(r.presence_odeur ?? r["44_Prsence_dodeur"]).includes("oui"),
   };
 }
-async function localPeRows() {
-  return (pointsEauInventaire as any[]).map(normalizePe);
+function normalizeGeneric(r: any) {
+  return {
+    module: text(r.module),
+    code: text(r.code || r.code_site || r.code_station || r.code_piezo),
+    libelle: text(r.libelle || r.nom_station || r.cours_eau || r.commune || r.village),
+    latitude: num(r.latitude),
+    longitude: num(r.longitude),
+    couleur: moduleColors[text(r.module)],
+  };
+}
+async function localPeRows() { return (pointsEauInventaire as any[]).map(normalizePe); }
+async function supabaseRows() {
+  if (!hasSupabaseAdminEnv()) return [];
+  const { data: view } = await supabaseAdmin.from("v_carte_points").select("*").limit(20000);
+  if (view?.length) return view.map((r: any) => r.module === "points_eau" ? normalizePe(r) : normalizeGeneric(r));
+  return [];
+}
+async function supabasePeRows() {
+  if (!hasSupabaseAdminEnv()) return [];
+  const { data } = await supabaseAdmin.from("v_points_eau_dashboard").select("*").limit(20000);
+  return (data || []).map(normalizePe);
+}
+function publicPopup(r: any) {
+  if (r.module === "points_eau") return `<strong>Point d’eau</strong><br/>Commune : ${esc(r.commune || "--")}<br/>Village/localité : ${esc(r.village || r.libelle || "--")}<br/>Type d’ouvrage : ${esc(r.type_infrastructure || "--")}`;
+  const label = r.module === "piezometrie" ? "Piézomètre" : r.module === "pluviometrie" ? "Pluviomètre" : r.module === "limnimetrie" ? "Limnimètre" : r.module;
+  return `<strong>${esc(label)}</strong><br/>Emplacement : ${esc(r.libelle || r.code || "--")}`;
+}
+function connectedPePopup(r: any) {
+  return `<strong>Point d’eau</strong><br/><b>${esc(r.code || "")}</b><br/>Commune : ${esc(r.commune || "--")}<br/>Village : ${esc(r.village || "--")}<br/>Type : ${esc(r.type_infrastructure || "--")}<br/>Fonctionnalité : ${esc(r.statut_fonctionnalite || "--")}<br/>Équipement : ${esc(r.equipement || "--")}<br/>Organe : ${esc(r.organe_gestion || "--")}<br/>Priorité : ${esc(r.priorite_rehabilitation || "--")}<br/>pH : ${esc(r.ph ?? "--")}<br/>Conductivité : ${esc(r.conductivite ?? "--")}<br/>TDS : ${esc(r.tds ?? "--")}<br/>Recommandation : ${esc(r.recommandation || "--")}`;
 }
 
 export async function GET(req: NextRequest) {
-  const moduleFilter = req.nextUrl.searchParams.get("module") || "";
   const theme = req.nextUrl.searchParams.get("theme") || "fonctionnalite";
-  const filter = allowed.has(moduleFilter) ? moduleFilter : "";
-  let rows: any[] = [];
-  let source = "Supabase";
-  if (hasSupabaseAdminEnv()) {
-    const { data: view } = await supabaseAdmin.from("v_carte_points").select("*").limit(8000);
-    rows = (view || []).filter(valid);
+  const detail = req.nextUrl.searchParams.get("detail") || "public";
+  const modulesParam = req.nextUrl.searchParams.get("modules") || req.nextUrl.searchParams.get("module") || "points_eau";
+  const modules = modulesParam === "none" ? [] : modulesParam.split(",").map((m) => m.trim()).filter((m) => allowed.has(m));
+
+  let rows: any[] = (await supabaseRows()).filter(valid);
+  let source = rows.length ? "Supabase" : "CSV local V2_3";
+  const needPe = modules.includes("points_eau") || !modules.length;
+  if (needPe) {
+    let pe = rows.filter((r) => r.module === "points_eau");
+    if (!pe.length) pe = (await supabasePeRows()).filter(valid);
+    if (!pe.length) pe = (await localPeRows()).filter(valid);
+    rows = [...rows.filter((r) => r.module !== "points_eau"), ...pe];
+    if (source !== "Supabase") source = "CSV local V2_3";
   }
-  if ((!rows.length || filter === "points_eau") && (!filter || filter === "points_eau")) {
-    let pe: any[] = [];
-    if (hasSupabaseAdminEnv()) {
-      const { data } = await supabaseAdmin.from("v_points_eau_dashboard").select("*").limit(10000);
-      pe = (data || []).map(normalizePe).filter(valid);
-    }
-    if (!pe.length) { pe = (await localPeRows()).filter(valid); source = "CSV local V2_3"; }
-    rows = filter === "points_eau" ? pe : [...rows.filter((r) => r.module !== "points_eau"), ...pe];
-  }
-  rows = rows.filter((p: any) => !filter || p.module === filter).map((r: any) => ({ ...r, couleur: r.module === "points_eau" ? colorPoint(r, theme) : undefined }));
-  const fb = filter ? fallback.filter((p) => p.module === filter) : fallback;
-  return NextResponse.json({ ok: true, data: rows.length ? rows : fb, source: rows.length ? source : "fallback", theme });
+  if (!rows.length) rows = fallback;
+
+  const summary = rows.reduce((acc: Record<string, number>, r: any) => { acc[r.module] = (acc[r.module] || 0) + 1; return acc; }, {});
+  const data = rows
+    .filter((p: any) => !modules.length || modules.includes(p.module))
+    .map((r: any) => ({ ...r, couleur: r.module === "points_eau" ? colorPoint(r, theme) : (moduleColors[r.module] || r.couleur), popup_html: detail === "connected" && r.module === "points_eau" ? connectedPePopup(r) : publicPopup(r) }));
+
+  return NextResponse.json({ ok: true, data, summary, source: rows === fallback ? "fallback" : source, theme });
 }
