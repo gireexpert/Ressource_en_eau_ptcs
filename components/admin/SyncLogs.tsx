@@ -1,3 +1,0 @@
-"use client";
-import { useEffect, useState } from "react";
-export default function SyncLogs(){const [logs,setLogs]=useState<any[]>([]);useEffect(()=>{fetch("/api/admin/sync-logs").then(r=>r.json()).then(j=>setLogs(j.data||[]))},[]);return <div className="panel"><h2>Historique des synchronisations</h2><table className="table"><thead><tr><th>Date</th><th>Module</th><th>Source</th><th>Nb</th><th>Statut</th><th>Message</th></tr></thead><tbody>{logs.map(l=><tr key={l.id}><td>{l.date_sync}</td><td>{l.module}</td><td>{l.source}</td><td>{l.nb_enregistrements}</td><td>{l.statut}</td><td>{l.message}</td></tr>)}{!logs.length&&<tr><td colSpan={6}>Aucune synchronisation enregistrée.</td></tr>}</tbody></table></div>}
